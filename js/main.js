@@ -1,5 +1,5 @@
-const color = ['white', 'black', 'red', 'green', 'CornflowerBlue', 'yellow'] 
-/* TODO
+const color = ['white', 'black', 'red', 'green', 'CornflowerBlue', 'yellow']
+/* TODO ==> DONE
 Use Node object for DFS, BFS --> KEEP ALL NODES IN ARRAY LIKE ARR, update fields, add to array so that it isn't messed up.
 
 Set each successors PARENT (new field for Node) -> to the VAL taken out of stack
@@ -8,10 +8,15 @@ When the destination reached, move backwards and make all squares yellow by goin
 
 
 */
+
+/*
+    TODO -> IS A* CORRECT???????
+*/
 console.log(color)
 arr = []
 let WIDTH = 1300;
 let HEIGHT = 700;
+let PROBWALL = 0.2;
 const canvas = document.getElementById('myCanvas');
 canvas.width = WIDTH;
 canvas.height = HEIGHT;
@@ -20,10 +25,10 @@ const rectSize = 20;
 let xSize = WIDTH / rectSize;
 let ySize = HEIGHT / rectSize;
 let start = [0, 0];
-let end = [xSize-1, 0];
+let end = [xSize - 1, 0];
 let BEGIN = true;
 
-let SPEED = 10;
+let SPEED = 0;
 function Node(pos) {
     this.position = pos;
     this.f = 0;
@@ -32,15 +37,15 @@ function Node(pos) {
     this.parent = null;
     this.open = false;
 }
-function createGrid(){
+function createGrid() {
     let res = [];
     for (let i = 0; i < xSize; i++) {
         temp = [];
         for (let j = 0; j < ySize; j++) {
-            if(arr[i][j] != 1){
+            if (arr[i][j] != 1) {
                 temp.push(new Node([i, j]));
             }
-            else{
+            else {
                 temp.push("");
             }
         }
@@ -60,7 +65,7 @@ var setup = () => {
                 temp.push(3);
             }
             else {
-                temp.push((Math.random() < 0.2) ? 1 : 0);
+                temp.push((Math.random() < PROBWALL) ? 1 : 0);
             }
         }
         arr.push(temp);
@@ -123,7 +128,7 @@ var getAdjValues = (i, j) => { // * * *
 var getAdjValuesAS = (i, j) => { // * * *
     // * - *
     // * * *
-    let res = [[i, j - 1], [i + 1, j], [i, j + 1], [i - 1, j], [i-1, j-1], [i-1, j+1], [i+1, j-1], [i+1, j+1]];
+    let res = [[i, j - 1], [i + 1, j], [i, j + 1], [i - 1, j]]//, [i - 1, j - 1], [i - 1, j + 1], [i + 1, j - 1], [i + 1, j + 1]];
     let actualRes = [];
     for (let i = 0; i < res.length; i++) {
         if ((res[i][0] >= 0 && res[i][0] < xSize) && (res[i][1] >= 0 && res[i][1] < ySize)) {
@@ -148,56 +153,54 @@ function manhattan(a, b) {
 }
 let q;
 async function astar() {
-    open = new Heap((a, b) => a.f-b.f)
+    open = new Heap((a, b) => a.f - b.f)
 
     let startNode = nodeAt(start);
     startNode.f = 0;
     startNode.g = 0;
-    startNode.opened = true;
+    startNode.open = true;
     open.push(new Node(start))
     while (!open.empty()) {
-        open.sort(function(a, b) {
-            return a.f - b.f;
-        })
-        q = open[0];
+        q = open.pop();
+        q.closed = true;
+        drawSq(q.position[0], q.position[1], 4);
         if (q.position[0] == end[0] && q.position[1] == end[1]) {
+            console.log(nodeAt(q.position));
+            let curr = nodeAt(q.position);
+            while (curr.parent != null) {
+                drawSq(curr.position[0], curr.position[1], 5);
+                console.log(curr.position);
+                curr = curr.parent;
+            }
             return;
         }
-        open.shift();
-        let successors = getAdjValuesAS(q.position[0], q.position[1]);
-        for (let i = 0; i < successors.length; i++) {
-            var isValid = true;
-            
-            node = new Node(successors[i]);
-            node.g = q.g + manhattan(node.position, q.position);
-            var h = manhattan(node.position, end);
-            node.f = node.g + h;
-            for (let j = 0; j < open.length; j++) {
-                if (open[j].position[0] == node.position[0] && open[j].position[1] == node.position[1] && open[j].f <= node.f) {
-                    isValid = false;
-                    break;
-                }
+        let neighbors = getAdjValuesAS(q.position[0], q.position[1]);
+        for(let i = 0; i < neighbors.length; i ++){
+            var cNode = nodeAt(neighbors[i]);
+            if(cNode.closed){
+                continue;
             }
-            if (isValid) {
-                for (let k = 0; k < closed.length; k++) {
-                    if (closed[k].position[0] == node.position[0] && closed[k].position[1] == node.position[1] && closed[k].f <= node.f) {
-                        isValid = false;
-                        break;
-                    }
+            nodeG = q.g + 1;
+
+            if(!cNode.opened || nodeG < cNode.g){//H value will be same so only need to compare G, not f
+                cNode.g = nodeG;
+                let hVal = manhattan(cNode.position, end);
+                cNode.f = hVal + cNode.g;
+                cNode.parent = q;
+                if (!cNode.open) {
+                    open.push(nodeAt(neighbors[i]));
+                    cNode.open = true;
                 }
-            }
-            if (isValid) {
-                open.push(node);
+                else{
+                    open.updateItem(cNode);
+                }
             }
         }
-        drawSq(q.position[0], q.position[1], 4);
-
-
-        closed.push(q);
+        drawSq(start[0], start[1], 2);
         await delay();
     }
 }
-function nodeAt(val){
+function nodeAt(val) {
     return grid[val[0]][val[1]];
 }
 async function bfs() {
@@ -233,10 +236,10 @@ async function bfs() {
                 visited[val.position[0]][val.position[1]] = true;
                 tmp = getAdjValues(val.position[0], val.position[1])
                 for (let i = 0; i < tmp.length; i++) {
-                    if(tmp[i][0] == end[0] && tmp[i][1] == end[1]){
+                    if (tmp[i][0] == end[0] && tmp[i][1] == end[1]) {
                         console.log(nodeAt(val.position));
                         let curr = nodeAt(val.position);
-                        while(curr.parent != null){
+                        while (curr.parent != null) {
                             drawSq(curr.position[0], curr.position[1], 5);
                             console.log(curr.position);
                             curr = curr.parent;
@@ -244,12 +247,12 @@ async function bfs() {
                         return;
                     }
                     if (stack.length <= 10000) {
-                        if(arr[tmp[i][0]][tmp[i][1]] != 1){
+                        if (arr[tmp[i][0]][tmp[i][1]] != 1) {
                             var currNode = nodeAt(tmp[i]);
-                            if(currNode.open || currNode.closed){
+                            if (currNode.open || currNode.closed) {
                                 let a_ = 0;
                             }
-                            else{
+                            else {
                                 currNode.parent = nodeAt(val.position);
                                 currNode.opened = true;
                                 stack.push(nodeAt(tmp[i]));
@@ -257,7 +260,7 @@ async function bfs() {
                         }
                     }
                 }
-                
+
             }
 
             //stack = stack.splice(0, currInd-100);
@@ -296,10 +299,10 @@ async function dfs() {
                 visited[val.position[0]][val.position[1]] = true;
                 tmp = getAdjValues(val.position[0], val.position[1])
                 for (let i = 0; i < tmp.length; i++) {
-                    if(tmp[i][0] == end[0] && tmp[i][1] == end[1]){
+                    if (tmp[i][0] == end[0] && tmp[i][1] == end[1]) {
                         console.log(nodeAt(val.position));
                         let curr = nodeAt(val.position);
-                        while(curr.parent != null){
+                        while (curr.parent != null) {
                             drawSq(curr.position[0], curr.position[1], 5);
                             console.log(curr.position);
                             curr = curr.parent;
@@ -307,12 +310,12 @@ async function dfs() {
                         return;
                     }
                     if (stack.length <= 10000) {
-                        if(arr[tmp[i][0]][tmp[i][1]] != 1){
+                        if (arr[tmp[i][0]][tmp[i][1]] != 1) {
                             var currNode = nodeAt(tmp[i]);
-                            if(currNode.open || currNode.closed){
+                            if (currNode.open || currNode.closed) {
                                 let a_ = 0;
                             }
-                            else{
+                            else {
                                 currNode.parent = nodeAt(val.position);
                                 currNode.opened = true;
                                 stack.push(nodeAt(tmp[i]));
@@ -320,7 +323,7 @@ async function dfs() {
                         }
                     }
                 }
-                
+
             }
         }
     }
