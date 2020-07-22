@@ -25,7 +25,7 @@ const rectSize = 20;
 let xSize = WIDTH / rectSize;
 let ySize = HEIGHT / rectSize;
 let start = [0, 0];
-let end = [xSize - 1, 0];
+let end = [xSize - 1, ySize-1];
 let BEGIN = true;
 
 let SPEED = 0;
@@ -182,7 +182,7 @@ async function astar() {
             }
             nodeG = q.g + 1;
 
-            if(!cNode.opened || nodeG < cNode.g){//H value will be same so only need to compare G, not f
+            if(!cNode.open || nodeG < cNode.g){//H value will be same so only need to compare G, not f
                 cNode.g = nodeG;
                 let hVal = manhattan(cNode.position, end);
                 cNode.f = hVal + cNode.g;
@@ -254,7 +254,7 @@ async function bfs() {
                             }
                             else {
                                 currNode.parent = nodeAt(val.position);
-                                currNode.opened = true;
+                                currNode.open = true;
                                 stack.push(nodeAt(tmp[i]));
                             }
                         }
@@ -317,7 +317,7 @@ async function dfs() {
                             }
                             else {
                                 currNode.parent = nodeAt(val.position);
-                                currNode.opened = true;
+                                currNode.open = true;
                                 stack.push(nodeAt(tmp[i]));
                             }
                         }
