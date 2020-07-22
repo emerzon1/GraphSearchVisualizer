@@ -25,7 +25,7 @@ const rectSize = 20;
 let xSize = WIDTH / rectSize;
 let ySize = HEIGHT / rectSize;
 let start = [0, 0];
-let end = [xSize - 1, ySize-1];
+let end = [xSize - 1, 0];
 let BEGIN = true;
 
 let SPEED = 0;
@@ -149,7 +149,7 @@ let open;
 let closed;
 
 function manhattan(a, b) {
-    return (a[0] + b[0]) + (a[1] + b[1]);
+    return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
 }
 let q;
 async function astar() {
